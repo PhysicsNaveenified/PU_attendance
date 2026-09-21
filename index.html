@@ -35,6 +35,7 @@
 
     .student-list { max-height: 350px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
     
+    /* Student item layout with Register Number display */
     .student-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
     .student-item:last-child { border-bottom: none; }
     
@@ -42,7 +43,7 @@
     .student-name { font-size: 0.95rem; font-weight: 500; }
     .reg-badge { font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.06); font-family: monospace; font-weight: 600; color: #334155; }
 
-    /* Custom background colors based on 9th & 10th letters */
+    /* Custom background colors based on Register Number */
     .student-item.bg-cs { background-color: #e0f2fe; } /* Light Blue for CS */
     .student-item.bg-cs:hover { background-color: #bae6fd; }
     
@@ -213,27 +214,16 @@
       
       const studentName = String(st.name || '').trim();
       const regNo = String(st.regNo || st.reg || st.registerNo || '').trim();
-
-      // Check 9th and 10th characters (indexes 8 and 9) of Register Number, falling back to full string if needed
-      let bgClass = 'bg-default';
-      const checkString = regNo || studentName;
       
-      if (checkString.length >= 10) {
-        const codePart = checkString.substring(8, 10).toUpperCase();
-        if (codePart === 'CS') {
-          bgClass = 'bg-cs';
-        } else if (codePart === 'SB') {
-          bgClass = 'bg-sb';
-        }
-      }
+      // Background color logic based on Register Number string
+      const regOrName = regNo + ' ' + studentName + ' ' + String(st.class || '');
+      const upperText = regOrName.toUpperCase();
 
-      if (bgClass === 'bg-default') {
-        const upper = checkString.toUpperCase();
-        if (upper.includes('CS')) {
-          bgClass = 'bg-cs';
-        } else if (upper.includes('SB')) {
-          bgClass = 'bg-sb';
-        }
+      let bgClass = 'bg-default';
+      if (upperText.includes('CS')) {
+        bgClass = 'bg-cs';
+      } else if (upperText.includes('SB')) {
+        bgClass = 'bg-sb';
       }
 
       item.className = `student-item ${bgClass}`;
