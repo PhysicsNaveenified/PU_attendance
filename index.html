@@ -95,15 +95,15 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDOl6iDR9dresNNZH1Uo4etpBeOG7Wn1XspI4uWEImV2HMYI9-YaDj9Qm9lQ05bmDx/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzopeH_4ZMFbCWco9K_K1Ieau5MNEDc7yFdZmGIb8j0Gcolixo8QhrmoiGXNUfHHiAr/exec";
 
   let allStudents = [];
   let currentMode = 'absentees';
 
-  // Set today's date default
+  // Set default date to today
   document.getElementById('attDate').valueAsDate = new Date();
 
-  // Load students on initial page load
+  // Load students automatically on page load
   window.addEventListener('DOMContentLoaded', () => {
     fetchStudents();
   });
@@ -160,7 +160,6 @@
       return;
     }
 
-    // Flexible matching for 11 / Class 11 / XI and 12 / Class 12 / XII
     const filtered = allStudents.filter(s => {
       const cls = String(s.class).toLowerCase().trim();
       const target = String(selectedClass).toLowerCase().trim();
@@ -200,12 +199,8 @@
     const dateVal = document.getElementById('attDate').value;
     const selectedClass = document.getElementById('classSelect').value;
 
-    if (!dateVal) {
-      showAlert('Please select a date.', 'error');
-      return;
-    }
-    if (!selectedClass) {
-      showAlert('Please select a class.', 'error');
+    if (!dateVal || !selectedClass) {
+      showAlert('Please select date and class.', 'error');
       return;
     }
 
@@ -217,6 +212,7 @@
     btn.innerText = 'Submitting...';
 
     const payload = {
+      action: 'submitAttendance',
       date: dateVal,
       selectedClass: selectedClass,
       mode: currentMode,
@@ -225,6 +221,9 @@
 
     fetch(SCRIPT_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
       body: JSON.stringify(payload)
     })
     .then(res => res.json())
