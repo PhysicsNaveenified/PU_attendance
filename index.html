@@ -108,16 +108,13 @@
 </div>
 
 <script>
-  // Updated with your new Web App URL
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJgvdeUfJq6p99kn-QkQQ1rlpUQM1RJq2ikwJXVHFEqgcQ8Z0YbH44SmdvSWUGUgEL/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr3fa9BNmGI98v1PPt8hnPNNMC-5i9yiZYhwGg2qYzCgcVtlH2jGRom5Je7uXiALV5/exec";
 
   let allStudents = [];
   let currentMode = 'absentees';
 
-  // Default to today's date
   document.getElementById('attDate').valueAsDate = new Date();
 
-  // Fetch student roster on page load
   window.addEventListener('DOMContentLoaded', () => {
     fetchStudents();
   });
@@ -188,7 +185,7 @@
     listContainer.innerHTML = '';
 
     if (!allStudents || allStudents.length === 0) {
-      listContainer.innerHTML = '<div class="loading">Fetching student list from Google Sheet...</div>';
+      listContainer.innerHTML = '<div class="loading">No students fetched from Google Sheet.</div>';
       return;
     }
 
