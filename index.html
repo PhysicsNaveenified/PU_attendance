@@ -95,15 +95,15 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzopeH_4ZMFbCWco9K_K1Ieau5MNEDc7yFdZmGIb8j0Gcolixo8QhrmoiGXNUfHHiAr/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0R_ovc9mfQnFK5eizV7kupCq0scn82lu-1YIfD6VKjHePJQ1PjNytc_79T5vF4yCI/exec";
 
   let allStudents = [];
   let currentMode = 'absentees';
 
-  // Set default date to today
+  // Default to today's date
   document.getElementById('attDate').valueAsDate = new Date();
 
-  // Load students automatically on page load
+  // Fetch student roster on page load
   window.addEventListener('DOMContentLoaded', () => {
     fetchStudents();
   });
@@ -113,7 +113,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          allStudents = data.students;
+          allStudents = data.students || [];
           if (document.getElementById('classSelect').value) {
             renderStudentList();
           }
@@ -121,7 +121,7 @@
           showAlert('Failed to fetch students: ' + data.message, 'error');
         }
       })
-      .catch(err => showAlert('Network error fetching students.', 'error'));
+      .catch(err => showAlert('Network error fetching students from Google Sheet.', 'error'));
   }
 
   document.getElementById('classSelect').addEventListener('change', function() {
@@ -150,6 +150,22 @@
     }
   }
 
+  function isClassMatching(sheetClass, selectedClass) {
+    if (!sheetClass) return false;
+
+    const normalizedSheet = String(sheetClass).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = String(selectedClass).toLowerCase().trim();
+
+    if (target === '11') {
+      return normalizedSheet.includes('11') || normalizedSheet.includes('xi') || normalizedSheet.includes('eleven');
+    }
+    if (target === '12') {
+      return normalizedSheet.includes('12') || normalizedSheet.includes('xii') || normalizedSheet.includes('twelve');
+    }
+
+    return normalizedSheet.includes(target);
+  }
+
   function renderStudentList() {
     const selectedClass = document.getElementById('classSelect').value;
     const listContainer = document.getElementById('studentList');
@@ -160,14 +176,10 @@
       return;
     }
 
-    const filtered = allStudents.filter(s => {
-      const cls = String(s.class).toLowerCase().trim();
-      const target = String(selectedClass).toLowerCase().trim();
-      return cls.includes(target) || (target === '11' && cls.includes('xi')) || (target === '12' && cls.includes('xii'));
-    });
+    const filtered = allStudents.filter(s => isClassMatching(s.class, selectedClass));
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '</div>';
+      listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '. Please check class format in your Google Sheet.</div>';
       return;
     }
 
