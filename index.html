@@ -39,7 +39,7 @@
     .student-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
     .student-item:last-child { border-bottom: none; }
     
-    /* Custom background colors based on Register Number */
+    /* Custom background colors based on 9th & 10th letters */
     .student-item.bg-cs { background-color: #e0f2fe; } /* Light Blue for CS */
     .student-item.bg-cs:hover { background-color: #bae6fd; }
     
@@ -209,15 +209,28 @@
     filtered.forEach((st, idx) => {
       const item = document.createElement('div');
       
-      // Determine background color based on Register Number/Name content (CS vs SB)
-      const regOrName = String(st.name || '') + ' ' + String(st.regNo || '') + ' ' + String(st.class || '');
-      const upperText = regOrName.toUpperCase();
-
+      // Extract Student Name / Register Number string
+      const rawText = String(st.name || '').trim();
+      
+      // Look for 9th and 10th letters (index 8 and 9 in 0-indexed JavaScript string)
       let bgClass = 'bg-default';
-      if (upperText.includes('CS')) {
-        bgClass = 'bg-cs';
-      } else if (upperText.includes('SB')) {
-        bgClass = 'bg-sb';
+      if (rawText.length >= 10) {
+        const codePart = rawText.substring(8, 10).toUpperCase();
+        if (codePart === 'CS') {
+          bgClass = 'bg-cs';
+        } else if (codePart === 'SB') {
+          bgClass = 'bg-sb';
+        }
+      }
+
+      // Fallback check if full name field contains code anywhere
+      if (bgClass === 'bg-default') {
+        const upperText = rawText.toUpperCase();
+        if (upperText.includes('CS')) {
+          bgClass = 'bg-cs';
+        } else if (upperText.includes('SB')) {
+          bgClass = 'bg-sb';
+        }
       }
 
       item.className = `student-item ${bgClass}`;
