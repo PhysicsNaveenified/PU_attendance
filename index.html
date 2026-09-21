@@ -95,7 +95,6 @@
 </div>
 
 <script>
-  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDOl6iDR9dresNNZH1Uo4etpBeOG7Wn1XspI4uWEImV2HMYI9-YaDj9Qm9lQ05bmDx/exec";
 
   let allStudents = [];
@@ -105,13 +104,9 @@
   document.getElementById('attDate').valueAsDate = new Date();
 
   // Load students on initial page load
-  window.onload = function() {
-    if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzDOl6iDR9dresNNZH1Uo4etpBeOG7Wn1XspI4uWEImV2HMYI9-YaDj9Qm9lQ05bmDx/exec") {
-      showAlert('Please replace SCRIPT_URL with your Google Apps Script Web App URL in code.', 'error');
-      return;
-    }
+  window.addEventListener('DOMContentLoaded', () => {
     fetchStudents();
-  };
+  });
 
   function fetchStudents() {
     fetch(`${SCRIPT_URL}?action=getStudents`)
@@ -119,6 +114,9 @@
       .then(data => {
         if (data.status === 'success') {
           allStudents = data.students;
+          if (document.getElementById('classSelect').value) {
+            renderStudentList();
+          }
         } else {
           showAlert('Failed to fetch students: ' + data.message, 'error');
         }
@@ -157,7 +155,17 @@
     const listContainer = document.getElementById('studentList');
     listContainer.innerHTML = '';
 
-    const filtered = allStudents.filter(s => String(s.class).includes(selectedClass));
+    if (!allStudents || allStudents.length === 0) {
+      listContainer.innerHTML = '<div class="loading">Fetching student list from Google Sheet...</div>';
+      return;
+    }
+
+    // Flexible matching for 11 / Class 11 / XI and 12 / Class 12 / XII
+    const filtered = allStudents.filter(s => {
+      const cls = String(s.class).toLowerCase().trim();
+      const target = String(selectedClass).toLowerCase().trim();
+      return cls.includes(target) || (target === '11' && cls.includes('xi')) || (target === '12' && cls.includes('xii'));
+    });
 
     if (filtered.length === 0) {
       listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '</div>';
@@ -225,7 +233,6 @@
       btn.innerText = 'Submit Attendance';
       if (data.status === 'success') {
         showAlert('Attendance updated successfully in Google Sheet!', 'success');
-        // Uncheck boxes after submission
         document.querySelectorAll('#studentList input[type="checkbox"]').forEach(cb => cb.checked = false);
       } else {
         showAlert('Error: ' + data.message, 'error');
@@ -243,7 +250,9 @@
     box.className = `alert alert-${type}`;
     box.innerText = msg;
     box.style.display = 'block';
-    setTimeout(() => { box.style.display = 'none'; }, 5000);
+    if (type === 'success') {
+      setTimeout(() => { box.style.display = 'none'; }, 4000);
+    }
   }
 </script>
 
