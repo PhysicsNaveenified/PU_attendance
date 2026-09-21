@@ -34,13 +34,29 @@
     .select-all-btn { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; font-size: 0.85rem; }
 
     .student-list { max-height: 350px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
-    .student-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    
+    /* Default student item styling */
+    .student-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
     .student-item:last-child { border-bottom: none; }
-    .student-item:hover { background: #f8fafc; }
+    
+    /* Custom background colors based on Register Number */
+    .student-item.bg-cs { background-color: #e0f2fe; } /* Light Blue for CS */
+    .student-item.bg-cs:hover { background-color: #bae6fd; }
+    
+    .student-item.bg-sb { background-color: #fef3c7; } /* Light Amber/Orange for SB */
+    .student-item.bg-sb:hover { background-color: #fde68a; }
+
+    .student-item.bg-default:hover { background-color: #f8fafc; }
+
     .student-item input { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
     .student-item span { font-size: 0.95rem; }
 
-    .submit-btn { width: 100%; margin-top: 20px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    /* Count Banner */
+    .selection-summary { margin-top: 12px; padding: 10px; background: #f1f5f9; border-radius: 6px; font-weight: 600; font-size: 0.9rem; text-align: center; color: #334155; }
+    .selection-summary.absent-mode { color: var(--absent-color); background: #fef2f2; }
+    .selection-summary.present-mode { color: var(--present-color); background: #f0fdf4; }
+
+    .submit-btn { width: 100%; margin-top: 14px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
     .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
     .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; display: none; }
@@ -90,6 +106,10 @@
     <div class="student-list" id="studentList">
       <div class="loading">Loading student roster...</div>
     </div>
+    
+    <!-- Count Summary Badge -->
+    <div class="selection-summary absent-mode" id="selectionCount">Selected 0 students (Absent)</div>
+
     <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">Submit Attendance</button>
   </div>
 </div>
@@ -148,6 +168,8 @@
       presBtn.classList.add('active', 'present');
       absBtn.classList.remove('active', 'absent');
     }
+
+    updateCountSummary();
   }
 
   function isClassMatching(sheetClass, selectedClass) {
@@ -179,32 +201,65 @@
     const filtered = allStudents.filter(s => isClassMatching(s.class, selectedClass));
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '. Please check class format in your Google Sheet.</div>';
+      listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '.</div>';
+      updateCountSummary();
       return;
     }
 
     filtered.forEach((st, idx) => {
       const item = document.createElement('div');
-      item.className = 'student-item';
+      
+      // Determine background color based on Register Number/Name content (CS vs SB)
+      const regOrName = String(st.name || '') + ' ' + String(st.regNo || '') + ' ' + String(st.class || '');
+      const upperText = regOrName.toUpperCase();
+
+      let bgClass = 'bg-default';
+      if (upperText.includes('CS')) {
+        bgClass = 'bg-cs';
+      } else if (upperText.includes('SB')) {
+        bgClass = 'bg-sb';
+      }
+
+      item.className = `student-item ${bgClass}`;
       item.onclick = function(e) {
         if (e.target.tagName !== 'INPUT') {
           const chk = item.querySelector('input');
           chk.checked = !chk.checked;
         }
+        updateCountSummary();
       };
 
       item.innerHTML = `
-        <input type="checkbox" value="${st.name}" id="st_${idx}">
+        <input type="checkbox" value="${st.name}" id="st_${idx}" onchange="updateCountSummary()">
         <span>${st.name}</span>
       `;
       listContainer.appendChild(item);
     });
+
+    updateCountSummary();
   }
 
   function toggleSelectAll() {
     const checkboxes = document.querySelectorAll('#studentList input[type="checkbox"]');
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
     checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateCountSummary();
+  }
+
+  function updateCountSummary() {
+    const checkedBoxes = document.querySelectorAll('#studentList input[type="checkbox"]:checked');
+    const count = checkedBoxes.length;
+    const summaryBadge = document.getElementById('selectionCount');
+    
+    const labelText = currentMode === 'absentees' ? 'Absent' : 'Present';
+
+    summaryBadge.innerText = `Selected ${count} ${count === 1 ? 'student' : 'students'} (${labelText})`;
+
+    if (currentMode === 'absentees') {
+      summaryBadge.className = 'selection-summary absent-mode';
+    } else {
+      summaryBadge.className = 'selection-summary present-mode';
+    }
   }
 
   function submitAttendance() {
@@ -245,6 +300,7 @@
       if (data.status === 'success') {
         showAlert('Attendance updated successfully in Google Sheet!', 'success');
         document.querySelectorAll('#studentList input[type="checkbox"]').forEach(cb => cb.checked = false);
+        updateCountSummary();
       } else {
         showAlert('Error: ' + data.message, 'error');
       }
