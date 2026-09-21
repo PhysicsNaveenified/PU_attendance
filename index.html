@@ -40,7 +40,12 @@
     .student-item input { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
     .student-item span { font-size: 0.95rem; }
 
-    .submit-btn { width: 100%; margin-top: 20px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    /* Selection Counter Styling */
+    .selection-summary { margin-top: 14px; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; text-align: center; transition: all 0.2s; }
+    .selection-summary.absent-mode { color: var(--absent-color); background: #fef2f2; border: 1px solid #fecaca; }
+    .selection-summary.present-mode { color: var(--present-color); background: #f0fdf4; border: 1px solid #bbf7d0; }
+
+    .submit-btn { width: 100%; margin-top: 14px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
     .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
     .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; display: none; }
@@ -90,12 +95,16 @@
     <div class="student-list" id="studentList">
       <div class="loading">Loading student roster...</div>
     </div>
+
+    <!-- Selection Counter Badge -->
+    <div class="selection-summary absent-mode" id="selectionCount">Selected: 0 students (Absent)</div>
+
     <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">Submit Attendance</button>
   </div>
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6jPzEMKwTRfIURzGNHBXihApbYmBiqpazBlgdpyfjKhwbVb4L8_2zbzhcZEqY6A5-/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRe-skVvvrENnaimbBYLoyXq0yvwfx9g111Xxrn12NyDA9y-5XwljS0pmpGoJ9TGud/exec";
 
   let allStudents = [];
   let currentMode = 'absentees';
@@ -148,6 +157,8 @@
       presBtn.classList.add('active', 'present');
       absBtn.classList.remove('active', 'absent');
     }
+
+    updateCountSummary();
   }
 
   function isClassMatching(sheetClass, selectedClass) {
@@ -180,6 +191,7 @@
 
     if (filtered.length === 0) {
       listContainer.innerHTML = '<div class="loading">No students found for Class ' + selectedClass + '. Please check class format in your Google Sheet.</div>';
+      updateCountSummary();
       return;
     }
 
@@ -191,20 +203,39 @@
           const chk = item.querySelector('input');
           chk.checked = !chk.checked;
         }
+        updateCountSummary();
       };
 
       item.innerHTML = `
-        <input type="checkbox" value="${st.name}" id="st_${idx}">
+        <input type="checkbox" value="${st.name}" id="st_${idx}" onchange="updateCountSummary()">
         <span>${st.name}</span>
       `;
       listContainer.appendChild(item);
     });
+
+    updateCountSummary();
   }
 
   function toggleSelectAll() {
     const checkboxes = document.querySelectorAll('#studentList input[type="checkbox"]');
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
     checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateCountSummary();
+  }
+
+  function updateCountSummary() {
+    const checkedBoxes = document.querySelectorAll('#studentList input[type="checkbox"]:checked');
+    const count = checkedBoxes.length;
+    const summaryBadge = document.getElementById('selectionCount');
+    
+    const labelText = currentMode === 'absentees' ? 'Absent' : 'Present';
+    summaryBadge.innerText = `Selected: ${count} ${count === 1 ? 'student' : 'students'} (${labelText})`;
+
+    if (currentMode === 'absentees') {
+      summaryBadge.className = 'selection-summary absent-mode';
+    } else {
+      summaryBadge.className = 'selection-summary present-mode';
+    }
   }
 
   function submitAttendance() {
@@ -245,6 +276,7 @@
       if (data.status === 'success') {
         showAlert('Attendance updated successfully in Google Sheet!', 'success');
         document.querySelectorAll('#studentList input[type="checkbox"]').forEach(cb => cb.checked = false);
+        updateCountSummary();
       } else {
         showAlert('Error: ' + data.message, 'error');
       }
